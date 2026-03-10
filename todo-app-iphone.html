@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TODO" />
+  <title>TODO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Antique+Soft&family=Shippori+Mincho:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1a0f2e;
+      --bg2:      #231540;
+      --petal1:   #c084fc;
+      --petal2:   #a855f7;
+      --petal3:   #7c3aed;
+      --blossom:  #e9d5ff;
+      --dew:      #f3e8ff;
+      --stem:     #6d28d9;
+      --mist:     #7c3aed44;
+      --border:   #6d28d933;
+      --text:     #f3e8ff;
+      --muted:    #a78bca;
+      --danger:   #f472b6;
+      --carry:    #fb923c;
+      --radius:   16px;
+      --shadow:   0 4px 32px #7c3aed22;
+      /* iPhone safe areas */
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-left: env(safe-area-inset-left);
+      --safe-right: env(safe-area-inset-right);
+    }
+
+    html {
+      height: -webkit-fill-available;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: calc(var(--safe-top) + 16px) calc(var(--safe-right) + 16px) calc(var(--safe-bottom) + 80px) calc(var(--safe-left) + 16px);
+      position: relative;
+      overflow-x: hidden;
+      /* Prevent rubber-band scrolling on body */
+      overscroll-behavior: none;
+      /* Better text rendering on iOS */
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Prevent callout on long press */
+    button, a { -webkit-touch-callout: none; }
+    /* Prevent text selection on UI elements */
+    button { -webkit-user-select: none; user-select: none; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 10% 20%, #4c1d9533 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 90% 80%, #6d28d944 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 60% 10%, #7c3aed22 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .petal-bg {
+      position: fixed;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.12;
+    }
+    .petal-bg.top-right { top: -60px; right: -40px; width: 200px; }
+    .petal-bg.bottom-left { bottom: -40px; left: -60px; width: 160px; transform: rotate(120deg); }
+
+    .app {
+      width: 100%;
+      max-width: 430px; /* iPhone max width */
+      position: relative;
+      z-index: 1;
+      animation: bloomIn 0.7s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes bloomIn {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Title area */
+    .brand {
+      text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+      padding-top: 8px;
+    }
+    .brand-icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 4px;
+      animation: sway 4s ease-in-out infinite;
+    }
+    @keyframes sway {
+      0%,100% { transform: rotate(-4deg); }
+      50%      { transform: rotate(4deg); }
+    }
+    .brand-name {
+      font-family: 'Zen Antique Soft', serif;
+      font-size: 20px;
+      color: var(--blossom);
+      letter-spacing: 0.25em;
+    }
+    .brand-sub {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.2em;
+      margin-top: 3px;
+    }
+
+    /* Tabs */
+    .top-tabs {
+      display: flex;
+      background: #ffffff08;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 4px;
+    }
+    .top-tab {
+      flex: 1;
+      padding: 11px 0; /* Taller for easier tapping */
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      font-family: 'Shippori Mincho', serif;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      border-radius: 99px;
+      transition: all 0.25s;
+      /* Minimum tap target */
+      min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .top-tab.active {
+      background: linear-gradient(135deg, var(--petal2), var(--petal3));
+      color: var(--dew);
+      box-shadow: 0 2px 12px #a855f744;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Date header */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .today-label {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 15px;
+      color: var(--petal1);
+      letter-spacing: 0.1em;
+    }
+    .date-badge {
+      background: var(--mist);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 5px 14px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'Shippori Mincho', serif;
+      letter-spacing: 0.05em;
+    }
+
+    /* Stats */
+    .stats { display: flex; gap: 8px; margin-bottom: 14px; }
+    .stat {
+      flex: 1;
+      background: #ffffff06;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 8px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #ffffff05, transparent);
+      pointer-events: none;
+    }
+    .stat-value {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--blossom);
+      line-height: 1;
+    }
+    .stat.done .stat-value { color: var(--petal1); }
+    .stat.carry .stat-value { color: var(--carry); }
+    .stat-label { font-size: 9px; color: var(--muted); margin-top: 4px; letter-spacing: 0.1em; }
+
+    /* Progress */
+    .progress-wrap { margin-bottom: 20px; position: relative; }
+    .progress-bar {
+      height: 6px;
+      background: #ffffff10;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--petal1), var(--petal2), #c4b5fd);
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute; right: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 10px; height: 10px;
+      background: #e9d5ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #c084fc;
+    }
+    .progress-pct {
+      font-size: 11px; color: var(--muted);
+      text-align: right; margin-top: 5px;
+      font-family: 'Shippori Mincho', serif;
+    }
+
+    /* Input */
+    .input-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .todo-input {
+      flex: 1;
+      background: #ffffff08;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      color: var(--text);
+      font-size: 16px; /* 16px prevents iOS auto-zoom */
+      font-family: 'Noto Sans JP', sans-serif;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      -webkit-appearance: none;
+      appearance: none;
+      /* Prevent zoom on focus on iOS */
+      transform-origin: left top;
+    }
+    .todo-input::placeholder { color: var(--muted); }
+    .todo-input:focus {
+      border-color: var(--petal2);
+      box-shadow: 0 0 0 3px #a855f722, inset 0 0 20px #a855f708;
+    }
+    .add-btn {
+      background: linear-gradient(135deg, var(--petal1), var(--petal3));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-size: 22px;
+      font-weight: 300;
+      cursor: pointer;
+      box-shadow: 0 4px 16px #a855f744;
+      transition: transform 0.15s, box-shadow 0.15s;
+      min-width: 54px;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .add-btn:active { transform: scale(0.93); opacity: 0.9; }
+
+    /* Filters - horizontal scroll on mobile */
+    .filters {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-btn {
+      padding: 8px 16px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-family: 'Shippori Mincho', serif;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-height: 36px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .filter-btn.active {
+      background: linear-gradient(135deg, #a855f733, #7c3aed33);
+      border-color: var(--petal2);
+      color: var(--petal1);
+    }
+
+    /* Todo items - larger touch targets */
+    .todo-list { display: flex; flex-direction: column; gap: 8px; }
+    .todo-item {
+      display: flex; align-items: center; gap: 12px;
+      background: #ffffff06;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px; /* More vertical padding for touch */
+      animation: petalDrop 0.3s cubic-bezier(.16,1,.3,1) both;
+      transition: opacity 0.3s, border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .todo-item:active { background: #ffffff0e; }
+    .todo-item.done-item { opacity: 0.38; }
+    .todo-item.carry-item {
+      border-left: 3px solid var(--carry);
+      background: #fb923c08;
+    }
+    @keyframes petalDrop {
+      from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Petal checkbox - larger tap area */
+    .check-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      font-size: 15px;
+      color: transparent;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+      /* Extend tap area */
+      padding: 4px;
+      margin: -4px;
+    }
+    .check-btn::before {
+      content: '✿';
+      position: absolute;
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      color: #fff;
+    }
+    .check-btn.checked {
+      background: linear-gradient(135deg, var(--petal1), var(--petal3));
+      border-color: var(--petal2);
+      box-shadow: 0 0 12px #a855f766;
+    }
+    .check-btn.checked::before { opacity: 1; }
+
+    .todo-text-wrap { flex: 1; min-width: 0; }
+    .todo-text { font-size: 14px; line-height: 1.6; color: var(--text); word-break: break-word; }
+    .todo-text.done-text { text-decoration: line-through; color: var(--muted); }
+    .carry-tag { font-size: 10px; color: var(--carry); margin-top: 2px; font-family: 'Shippori Mincho', serif; }
+
+    .del-btn {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 18px; padding: 6px 8px;
+      border-radius: 8px;
+      transition: color 0.2s;
+      min-width: 40px; min-height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .del-btn:active { color: var(--danger); background: #f472b610; }
+
+    .empty {
+      text-align: center; padding: 48px 0;
+      color: var(--muted); font-size: 13px;
+      font-family: 'Shippori Mincho', serif;
+      letter-spacing: 0.1em;
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; display: block; opacity: 0.6; }
+
+    /* Footer */
+    .footer-row {
+      margin-top: 18px; display: flex;
+      justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .snapshot-btn, .carryover-btn {
+      border-radius: 99px;
+      font-size: 12px;
+      font-family: 'Shippori Mincho', serif;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+      min-height: 44px;
+      display: flex; align-items: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .snapshot-btn {
+      background: linear-gradient(135deg, #a855f722, #7c3aed22);
+      border: 1px solid #a855f755;
+      color: var(--petal1);
+    }
+    .snapshot-btn:active { background: linear-gradient(135deg, #a855f744, #7c3aed44); }
+    .carryover-btn {
+      background: #fb923c15;
+      border: 1px solid #fb923c44;
+      color: var(--carry);
+    }
+    .carryover-btn:active { background: #fb923c30; }
+    .clear-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: 12px; cursor: pointer;
+      font-family: 'Shippori Mincho', serif;
+      padding: 8px 10px; border-radius: 8px;
+      min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .clear-btn:active { color: var(--danger); }
+    .io-row {
+      margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;
+      padding-top: 12px; border-top: 1px solid var(--border);
+    }
+    .export-btn, .import-btn {
+      border-radius: 99px; font-size: 12px;
+      font-family: 'Shippori Mincho', serif;
+      padding: 9px 16px; cursor: pointer;
+      transition: all 0.2s; letter-spacing: 0.05em;
+      min-height: 44px;
+      display: flex; align-items: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .export-btn {
+      background: #e9d5ff15; border: 1px solid #e9d5ff33; color: var(--blossom);
+    }
+    .export-btn:active { background: #e9d5ff28; }
+    .import-btn {
+      background: #c084fc15; border: 1px solid #c084fc33; color: var(--petal1);
+    }
+    .import-btn:active { background: #c084fc28; }
+    .io-note {
+      font-size: 10px; color: var(--muted);
+      font-family: 'Shippori Mincho', serif;
+      align-self: center;
+      line-height: 1.5;
+      width: 100%;
+    }
+
+    /* ===== CALENDAR ===== */
+    .cal-wrap {
+      background: #ffffff06; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 14px 12px;
+      margin-bottom: 20px;
+    }
+    .cal-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-month-label {
+      font-family: 'Shippori Mincho', serif; font-size: 14px;
+      color: var(--blossom); letter-spacing: 0.1em;
+    }
+    .cal-nav-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+      font-size: 18px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cal-nav-btn:active { border-color: var(--petal2); color: var(--petal1); }
+    .cal-dow-row {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 6px;
+    }
+    .cal-dow-row span {
+      text-align: center; font-size: 10px; color: var(--muted);
+      font-family: 'Shippori Mincho', serif; padding: 2px 0;
+    }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+    }
+    .cal-cell {
+      aspect-ratio: 1; border-radius: 8px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 11px; font-family: 'Shippori Mincho', serif;
+      position: relative; cursor: default;
+      transition: transform 0.15s;
+      background: #ffffff08; border: 1px solid transparent;
+    }
+    .cal-cell.empty { background: transparent; border-color: transparent; }
+    .cal-cell.today { border-color: var(--petal2); box-shadow: 0 0 10px #a855f733; }
+    .cal-cell.has-data { cursor: pointer; }
+    .cal-cell.has-data:active { transform: scale(1.08); }
+    .cal-cell .cal-day { font-size: 10px; line-height: 1; }
+    .cal-cell .cal-flower { font-size: 12px; margin-top: 1px; line-height: 1; }
+    .cal-cell .cal-pct-label { font-size: 7px; color: rgba(255,255,255,0.6); margin-top: 1px; line-height: 1; }
+    .cal-cell.pct-high  { background: #c084fc33; border-color: #c084fc55; }
+    .cal-cell.pct-mid   { background: #7c3aed22; border-color: #7c3aed44; }
+    .cal-cell.pct-low   { background: #fb923c18; border-color: #fb923c44; }
+    .cal-cell.today.pct-high { box-shadow: 0 0 14px #c084fc66; }
+
+    .cal-legend {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+      justify-content: center;
+    }
+    .leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); font-family: 'Shippori Mincho', serif; }
+    .leg-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ===== HISTORY ===== */
+    .history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .history-title {
+      font-family: 'Zen Antique Soft', serif;
+      font-size: 16px; letter-spacing: 0.2em;
+      color: var(--petal1);
+    }
+    .history-count { font-size: 11px; color: var(--muted); font-family: 'Shippori Mincho', serif; }
+
+    /* History cards */
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-card {
+      background: #ffffff06;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .history-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 14px; cursor: pointer;
+      border-bottom: 1px solid transparent;
+      min-height: 56px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .history-card-header:active { background: #ffffff08; }
+    .history-card.expanded .history-card-header { border-bottom-color: var(--border); }
+    .history-date { font-family: 'Shippori Mincho', serif; font-size: 13px; color: var(--blossom); letter-spacing: 0.05em; }
+    .history-meta { display: flex; align-items: center; gap: 8px; }
+    .history-rate { font-family: 'Shippori Mincho', serif; font-size: 12px; color: var(--petal1); }
+    .history-bar-wrap { width: 50px; height: 4px; background: #ffffff15; border-radius: 99px; overflow: hidden; }
+    .history-bar-fill { height: 100%; background: linear-gradient(90deg, var(--petal1), #c4b5fd); border-radius: 99px; }
+    .history-chevron { font-size: 11px; color: var(--muted); transition: transform 0.25s; }
+    .history-card.expanded .history-chevron { transform: rotate(180deg); }
+    .history-del-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; font-family: 'Shippori Mincho', serif;
+      padding: 5px 10px; border-radius: 99px; cursor: pointer;
+      min-height: 32px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .history-del-btn:active { border-color: var(--danger); color: var(--danger); }
+    .history-tasks { display: none; padding: 10px 14px 14px; flex-direction: column; gap: 4px; }
+    .history-card.expanded .history-tasks { display: flex; }
+    .history-task {
+      display: flex; align-items: center; gap: 10px; font-size: 13px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      min-height: 44px;
+    }
+    .history-task:last-child { border-bottom: none; }
+    .history-task.ht-done { color: var(--muted); text-decoration: line-through; }
+    .history-task.ht-pending { color: var(--text); }
+    .ht-dot { font-size: 12px; flex-shrink: 0; }
+    .ht-carry { font-size: 10px; color: var(--carry); margin-left: auto; font-family: 'Shippori Mincho', serif; }
+    .no-history {
+      text-align: center; padding: 60px 0; color: var(--muted);
+      font-size: 13px; font-family: 'Shippori Mincho', serif; letter-spacing: 0.1em; line-height: 2;
+    }
+
+    /* iOS keyboard adjustment - push content up */
+    @supports (-webkit-touch-callout: none) {
+      .todo-input:focus ~ .add-btn {
+        position: relative;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<svg class="petal-bg top-right" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="100" cy="50" rx="30" ry="70" fill="#c084fc" transform="rotate(0 100 100)"/>
+  <ellipse cx="100" cy="50" rx="30" ry="70" fill="#a855f7" transform="rotate(72 100 100)"/>
+  <ellipse cx="100" cy="50" rx="30" ry="70" fill="#c084fc" transform="rotate(144 100 100)"/>
+  <ellipse cx="100" cy="50" rx="30" ry="70" fill="#a855f7" transform="rotate(216 100 100)"/>
+  <ellipse cx="100" cy="50" rx="30" ry="70" fill="#c084fc" transform="rotate(288 100 100)"/>
+  <circle cx="100" cy="100" r="15" fill="#e9d5ff"/>
+</svg>
+<svg class="petal-bg bottom-left" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="100" cy="50" rx="25" ry="60" fill="#7c3aed" transform="rotate(0 100 100)"/>
+  <ellipse cx="100" cy="50" rx="25" ry="60" fill="#6d28d9" transform="rotate(60 100 100)"/>
+  <ellipse cx="100" cy="50" rx="25" ry="60" fill="#7c3aed" transform="rotate(120 100 100)"/>
+  <ellipse cx="100" cy="50" rx="25" ry="60" fill="#6d28d9" transform="rotate(180 100 100)"/>
+  <ellipse cx="100" cy="50" rx="25" ry="60" fill="#7c3aed" transform="rotate(240 100 100)"/>
+  <ellipse cx="100" cy="50" rx="25" ry="60" fill="#6d28d9" transform="rotate(300 100 100)"/>
+  <circle cx="100" cy="100" r="12" fill="#c4b5fd"/>
+</svg>
+
+<div class="app">
+  <div class="brand">
+    <span class="brand-icon">✿</span>
+    <div class="brand-name">TODO</div>
+    <div class="brand-sub">タスク管理</div>
+  </div>
+
+  <div class="top-tabs">
+    <button class="top-tab active" onclick="switchTab('today')">今日 ✿</button>
+    <button class="top-tab" onclick="switchTab('history')">履歴 ❋</button>
+  </div>
+
+  <!-- TODAY -->
+  <div class="view active" id="view-today">
+    <div class="header">
+      <div class="today-label">今日のタスク</div>
+      <div class="date-badge" id="date-label"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">合計</div></div>
+      <div class="stat done"><div class="stat-value" id="stat-done">0</div><div class="stat-label">完了</div></div>
+      <div class="stat"><div class="stat-value" id="stat-left">0</div><div class="stat-label">残り</div></div>
+      <div class="stat carry"><div class="stat-value" id="stat-carry">0</div><div class="stat-label">引継ぎ</div></div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-pct" id="progress-pct">0%</div>
+    </div>
+
+    <div class="input-row">
+      <input class="todo-input" id="todo-input" type="text" placeholder="タスクを追加..." autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done" />
+      <button class="add-btn" onclick="addTodo()">✿</button>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter(this,'all')">すべて</button>
+      <button class="filter-btn" onclick="setFilter(this,'active')">未完了</button>
+      <button class="filter-btn" onclick="setFilter(this,'done')">完了済み</button>
+      <button class="filter-btn" onclick="setFilter(this,'carry')">引継ぎ</button>
+    </div>
+
+    <div class="todo-list" id="todo-list"></div>
+
+    <div class="footer-row">
+      <div class="btn-group">
+        <button class="snapshot-btn" onclick="saveSnapshot()">✾ 履歴に保存</button>
+        <button class="carryover-btn" onclick="carryOver()">↩ 翌日に引継ぎ</button>
+      </div>
+      <button class="clear-btn" onclick="clearDone()">完了済みを削除</button>
+    </div>
+    <div class="io-row">
+      <button class="export-btn" onclick="exportData()">⬇ バックアップを保存</button>
+      <button class="import-btn" onclick="document.getElementById('import-file').click()">⬆ バックアップを読込</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
+      <span class="io-note">キャッシュクリア前にバックアップを保存してください</span>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="view" id="view-history">
+    <div class="history-header">
+      <div class="history-title">履歴 ❋</div>
+      <div class="history-count" id="history-count"></div>
+    </div>
+
+    <div class="cal-wrap">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+        <div class="cal-month-label" id="cal-month-label"></div>
+        <button class="cal-nav-btn" onclick="calNext()">›</button>
+      </div>
+      <div class="cal-dow-row">
+        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <span class="leg-item"><span class="leg-dot" style="background:var(--petal1)"></span>80〜100%</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#a78bca"></span>50〜79%</span>
+        <span class="leg-item"><span class="leg-dot" style="background:var(--carry)"></span>1〜49%</span>
+        <span class="leg-item"><span class="leg-dot" style="background:#ffffff18;border:1px solid var(--border)"></span>記録なし</span>
+      </div>
+    </div>
+
+    <div class="history-list" id="history-list"></div>
+  </div>
+</div>
+
+<script>
+  let todos = JSON.parse(localStorage.getItem('todos_floral') || '[]');
+  let history = JSON.parse(localStorage.getItem('history_floral') || '[]');
+  let filter = 'all';
+  const DAYS = ['日','月','火','水','木','金','土'];
+
+  const todayKey = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+
+  const d = new Date();
+  document.getElementById('date-label').textContent =
+    `${d.getMonth()+1}月${d.getDate()}日 (${DAYS[d.getDay()]})`;
+
+  function save() {
+    localStorage.setItem('todos_floral', JSON.stringify(todos));
+    localStorage.setItem('history_floral', JSON.stringify(history));
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderToday() {
+    const total = todos.length;
+    const done = todos.filter(t => t.done).length;
+    const carry = todos.filter(t => t.carriedFrom).length;
+    const pct = total === 0 ? 0 : Math.round(done / total * 100);
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-done').textContent = done;
+    document.getElementById('stat-left').textContent = total - done;
+    document.getElementById('stat-carry').textContent = carry;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-pct').textContent = pct + '%';
+
+    const filtered = todos.filter(t =>
+      filter === 'done' ? t.done :
+      filter === 'active' ? !t.done :
+      filter === 'carry' ? !!t.carriedFrom : true
+    );
+
+    const list = document.getElementById('todo-list');
+    if (filtered.length === 0) {
+      const msgs = {
+        done: '完了したタスクはありません',
+        active: 'すべて咲き誇りました ✿',
+        carry: '引継ぎタスクはありません',
+        all: 'タスクを追加してください'
+      };
+      list.innerHTML = `<div class="empty"><span class="empty-icon">❀</span>${msgs[filter]}</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(t => `
+      <div class="todo-item ${t.done ? 'done-item' : ''} ${t.carriedFrom ? 'carry-item' : ''}">
+        <button class="check-btn ${t.done ? 'checked' : ''}" onclick="toggle(${t.id})"></button>
+        <div class="todo-text-wrap">
+          <div class="todo-text ${t.done ? 'done-text' : ''}">${escHtml(t.text)}</div>
+          ${t.carriedFrom ? `<div class="carry-tag">↩ ${t.carriedFrom} より引継ぎ</div>` : ''}
+        </div>
+        <button class="del-btn" onclick="remove(${t.id})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  // ===== CALENDAR =====
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
+
+  function buildHistoryMap() {
+    const map = {};
+    history.forEach(snap => {
+      const total = snap.todos.length;
+      const done = snap.todos.filter(t => t.done).length;
+      map[snap.date] = total === 0 ? 0 : Math.round(done / total * 100);
+    });
+    return map;
+  }
+
+  function renderCalendar() {
+    const map = buildHistoryMap();
+    const todayStr = todayKey();
+    document.getElementById('cal-month-label').textContent =
+      `${calYear}年 ${calMonth + 1}月`;
+
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const grid = document.getElementById('cal-grid');
+    let html = '';
+
+    for (let i = 0; i < firstDay; i++) {
+      html += `<div class="cal-cell empty"></div>`;
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isToday = key === todayStr;
+      const pct = map[key];
+      let tierClass = '';
+      let flower = '';
+      let pctLabel = '';
+      if (pct !== undefined) {
+        if (pct >= 80)      { tierClass = 'pct-high'; flower = '✿'; }
+        else if (pct >= 50) { tierClass = 'pct-mid';  flower = '❀'; }
+        else                { tierClass = 'pct-low';  flower = '✾'; }
+        pctLabel = pct + '%';
+      }
+      html += `
+        <div class="cal-cell ${isToday ? 'today' : ''} ${tierClass} ${pct !== undefined ? 'has-data' : ''}"
+             ${pct !== undefined ? `onclick="scrollToSnap('${key}')" title="${key}: ${pctLabel}"` : ''}>
+          <span class="cal-day">${d}</span>
+          ${flower ? `<span class="cal-flower">${flower}</span>` : ''}
+          ${pctLabel ? `<span class="cal-pct-label">${pctLabel}</span>` : ''}
+        </div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function calPrev() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
+  }
+  function calNext() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  }
+
+  function scrollToSnap(date) {
+    const cards = document.querySelectorAll('.history-card');
+    cards.forEach(card => {
+      const dateEl = card.querySelector('.history-date');
+      if (dateEl && dateEl.dataset.date === date) {
+        card.classList.add('expanded');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+
+  function renderHistory() {
+    document.getElementById('history-count').textContent = history.length + '日分';
+    renderCalendar();
+    const hList = document.getElementById('history-list');
+    if (!history.length) {
+      hList.innerHTML = `<div class="no-history">❀<br><br>まだ履歴がありません<br>「履歴に保存」で記録しましょう</div>`;
+      return;
+    }
+    const sorted = [...history].sort((a,b) => b.date.localeCompare(a.date));
+    hList.innerHTML = sorted.map((snap, i) => {
+      const total = snap.todos.length;
+      const done = snap.todos.filter(t => t.done).length;
+      const pct = total === 0 ? 0 : Math.round(done / total * 100);
+      const [y,m,dd] = snap.date.split('-');
+      const dow = DAYS[new Date(snap.date+'T00:00:00').getDay()];
+      return `
+        <div class="history-card" id="hcard-${i}">
+          <div class="history-card-header" onclick="toggleCard(${i})">
+            <div class="history-date" data-date="${snap.date}">${y}年${parseInt(m)}月${parseInt(dd)}日 (${dow})</div>
+            <div class="history-meta">
+              <span class="history-rate">${done}/${total} (${pct}%)</span>
+              <div class="history-bar-wrap"><div class="history-bar-fill" style="width:${pct}%"></div></div>
+              <button class="history-del-btn" onclick="event.stopPropagation();deleteSnap('${snap.date}')">削除</button>
+              <span class="history-chevron">▼</span>
+            </div>
+          </div>
+          <div class="history-tasks">
+            ${!snap.todos.length
+              ? '<div style="color:var(--muted);font-size:13px;padding:4px 0">タスクなし</div>'
+              : snap.todos.map(t => `
+                  <div class="history-task ${t.done ? 'ht-done' : 'ht-pending'}">
+                    <span class="ht-dot">${t.done ? '✿' : '❀'}</span>
+                    <span>${escHtml(t.text)}</span>
+                    ${t.carriedFrom ? '<span class="ht-carry">↩ 引継ぎ</span>' : ''}
+                  </div>`).join('')
+            }
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function addTodo() {
+    const input = document.getElementById('todo-input');
+    const text = input.value.trim();
+    if (!text) return;
+    todos.unshift({ id: Date.now(), text, done: false });
+    input.value = '';
+    save(); renderToday();
+  }
+
+  function toggle(id) {
+    todos = todos.map(t => t.id === id ? {...t, done: !t.done} : t);
+    save(); renderToday();
+  }
+
+  function remove(id) {
+    todos = todos.filter(t => t.id !== id);
+    save(); renderToday();
+  }
+
+  function clearDone() {
+    todos = todos.filter(t => !t.done);
+    save(); renderToday();
+  }
+
+  function setFilter(btn, f) {
+    filter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderToday();
+  }
+
+  function saveSnapshot() {
+    const key = todayKey();
+    const snap = { date: key, todos: JSON.parse(JSON.stringify(todos)) };
+    const idx = history.findIndex(h => h.date === key);
+    if (idx >= 0) {
+      if (!confirm('本日の履歴はすでに存在します。上書きしますか？')) return;
+      history[idx] = snap;
+    } else {
+      history.push(snap);
+    }
+    save();
+    alert('✿ ' + key + ' の記録を保存しました');
+  }
+
+  function carryOver() {
+    const pending = todos.filter(t => !t.done);
+    if (!pending.length) { alert('未完了のタスクはありません ✿'); return; }
+    const key = todayKey();
+    if (!confirm(`未完了の ${pending.length} 件を翌日に引き継ぎます。\n今日の記録も保存されます。よろしいですか？`)) return;
+    const snap = { date: key, todos: JSON.parse(JSON.stringify(todos)) };
+    const idx = history.findIndex(h => h.date === key);
+    if (idx >= 0) history[idx] = snap; else history.push(snap);
+    todos = pending.map(t => ({ ...t, id: Date.now() + Math.random(), done: false, carriedFrom: key }));
+    save(); renderToday();
+    alert(`✿ ${pending.length} 件を翌日へ引き継ぎました`);
+  }
+
+  function deleteSnap(date) {
+    if (!confirm(date + ' の記録を削除しますか？')) return;
+    history = history.filter(h => h.date !== date);
+    save(); renderHistory();
+  }
+
+  function toggleCard(i) {
+    document.getElementById('hcard-' + i).classList.toggle('expanded');
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.top-tab').forEach((btn, idx) => {
+      btn.classList.toggle('active', (idx===0&&tab==='today')||(idx===1&&tab==='history'));
+    });
+    document.getElementById('view-today').classList.toggle('active', tab==='today');
+    document.getElementById('view-history').classList.toggle('active', tab==='history');
+    if (tab === 'history') renderHistory();
+  }
+
+  function exportData() {
+    const data = { todos, history, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `todo-backup-${todayKey()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data.todos || !data.history) { alert('ファイルの形式が正しくありません'); return; }
+        if (!confirm(`バックアップを読み込みます。\n現在のデータは上書きされます。よろしいですか？`)) return;
+        todos = data.todos;
+        history = data.history;
+        save(); renderToday();
+        alert('✿ バックアップを読み込みました！');
+      } catch {
+        alert('読み込みに失敗しました。正しいバックアップファイルか確認してください。');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  // iOS: Enter key adds todo
+  document.getElementById('todo-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTodo();
+      document.getElementById('todo-input').blur(); // Close keyboard after adding
+    }
+  });
+
+  renderToday();
+</script>
+</body>
+</html>
